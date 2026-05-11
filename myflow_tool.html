@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DiagramaOS</title>
+  <title>Mi Flow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -125,7 +125,7 @@
     /* ── EXPORTS ── */
     function nodeLabelForUml(shape){return uml(shape.showTitle&&shape.title?`${shape.title}: ${shape.text}`:shape.text)}
     function generatePlantUML(state,scopeFrameId=null){const scoped=scopedState(state,scopeFrameId);const frames=Object.values(scoped.frames),shapes=Object.values(scoped.shapes),edges=Object.values(scoped.edges);const lines=['@startuml','skinparam componentStyle rectangle','skinparam shadowing false',''];const emitted=new Set();const emitFrame=(fr,depth=0)=>{if(emitted.has(fr.id))return;emitted.add(fr.id);const pad='  '.repeat(depth);lines.push(`${pad}package "${uml(fr.label)}" as ${fr.id} {`);frames.filter(child=>sectionForFrame(child,frames)===fr.id).forEach(child=>emitFrame(child,depth+1));shapes.filter(sh=>sectionIdForShape(sh,frames)===fr.id).forEach(sh=>{const type=sh.type==='sticky'?'note':sh.type==='text'?'rectangle':'component';if(type==='note')lines.push(`${pad}  note "${nodeLabelForUml(sh)}" as ${sh.id}`);else lines.push(`${pad}  ${type} "${nodeLabelForUml(sh)}" as ${sh.id}`)});lines.push(`${pad}}`,'')};frames.filter(fr=>sectionForFrame(fr,frames)==='root').forEach(fr=>emitFrame(fr,0));shapes.filter(sh=>sectionIdForShape(sh,frames)==='root').forEach(sh=>lines.push(`component "${nodeLabelForUml(sh)}" as ${sh.id}`));if(shapes.length||frames.length)lines.push('');edges.forEach(ed=>{if((scoped.shapes[ed.from.id]||scoped.frames[ed.from.id])&&(scoped.shapes[ed.to.id]||scoped.frames[ed.to.id])){const arrow=ed.arrowStart&&ed.arrowEnd!==false?'<-->':ed.arrowEnd===false?'--':'-->';lines.push(`${ed.from.id} ${arrow} ${ed.to.id}${ed.label?` : ${uml(ed.label)}`:''}`)}});lines.push('@enduml','');return lines.join(NL)}
-    function generateMarkdown(state,scopeFrameId=null){const scoped=scopedState(state,scopeFrameId);const frames=Object.values(scoped.frames),shapes=Object.values(scoped.shapes),edges=Object.values(scoped.edges);const lines=[];lines.push('# Export DiagramaOS');if(scopeFrameId)lines.push('',`> Scope: ${esc(state.frames[scopeFrameId]?.label||scopeFrameId)}`);lines.push('','## Sections','');if(!frames.length)lines.push('- root');frames.forEach(fr=>lines.push(`- ${esc(fr.label)} (${Math.round(fr.w)}x${Math.round(fr.h)})`));lines.push('','## Elementos','','| ID | Tipo | Título | Texto | Section |','|---|---|---|---|---|');shapes.forEach(sh=>lines.push(`| ${sh.id} | ${sh.type} | ${esc(sh.showTitle?sh.title:'')} | ${esc(sh.text)} | ${esc(sectionForShape(sh,frames))} |`));lines.push('','## Relaciones','','| Desde | Hacia | Label |','|---|---|---|');edges.forEach(ed=>{const from=scoped.shapes[ed.from.id]?.text||scoped.frames[ed.from.id]?.label||ed.from.id;const to=scoped.shapes[ed.to.id]?.text||scoped.frames[ed.to.id]?.label||ed.to.id;lines.push(`| ${esc(from)} | ${esc(to)} | ${esc(ed.label||'')} |`)});lines.push('','## PlantUML','','```plantuml',generatePlantUML(state,scopeFrameId).trim(),'```','');return lines.join(NL)}
+    function generateMarkdown(state,scopeFrameId=null){const scoped=scopedState(state,scopeFrameId);const frames=Object.values(scoped.frames),shapes=Object.values(scoped.shapes),edges=Object.values(scoped.edges);const lines=[];lines.push('# Export Mi Flow');if(scopeFrameId)lines.push('',`> Scope: ${esc(state.frames[scopeFrameId]?.label||scopeFrameId)}`);lines.push('','## Sections','');if(!frames.length)lines.push('- root');frames.forEach(fr=>lines.push(`- ${esc(fr.label)} (${Math.round(fr.w)}x${Math.round(fr.h)})`));lines.push('','## Elementos','','| ID | Tipo | Título | Texto | Section |','|---|---|---|---|---|');shapes.forEach(sh=>lines.push(`| ${sh.id} | ${sh.type} | ${esc(sh.showTitle?sh.title:'')} | ${esc(sh.text)} | ${esc(sectionForShape(sh,frames))} |`));lines.push('','## Relaciones','','| Desde | Hacia | Label |','|---|---|---|');edges.forEach(ed=>{const from=scoped.shapes[ed.from.id]?.text||scoped.frames[ed.from.id]?.label||ed.from.id;const to=scoped.shapes[ed.to.id]?.text||scoped.frames[ed.to.id]?.label||ed.to.id;lines.push(`| ${esc(from)} | ${esc(to)} | ${esc(ed.label||'')} |`)});lines.push('','## PlantUML','','```plantuml',generatePlantUML(state,scopeFrameId).trim(),'```','');return lines.join(NL)}
     function generateJSON(state,scopeFrameId=null){return JSON.stringify(scopedState(state,scopeFrameId),null,2)}
     function stateFromJSON(text){const data=JSON.parse(text);const next={...DEFAULT_STATE,frames:data.frames||{},shapes:data.shapes||{},edges:data.edges||{},order:data.order||[],view:data.view||DEFAULT_STATE.view};Object.values(next.shapes).forEach(sh=>{if(sh.showTitle===undefined)sh.showTitle=false;if(sh.title===undefined)sh.title='Título'});Object.values(next.frames).forEach(fr=>{if(fr.showTitle===undefined)fr.showTitle=true});next.order=normalizeOrder(next.order,next.frames,next.shapes);return next}
     function extractPlantUML(text){const start=text.indexOf('@startuml');const end=text.indexOf('@enduml');if(start>=0&&end>=0)return text.slice(start,end+8);const fence=text.indexOf('```plantuml');if(fence>=0){const after=text.slice(fence+11);const close=after.indexOf('```');return close>=0?after.slice(0,close):after}return text}
@@ -242,7 +242,7 @@
       const inlineItem=inlineEdit?(inlineEdit.kind==='shape'?state.shapes[inlineEdit.id]:state.frames[inlineEdit.id]):null;
       return <div className="app">
         <header className="header">
-          <div className="brand">🗂 DiagramaOS <small>/ Lienzo libre</small> <span className="ver">v{VERSION}</span></div>
+          <div className="brand">🗂 Mi Flow <small>/ Lienzo libre</small> <span className="ver">v{VERSION}</span></div>
           <div className="header-actions">
             <button className="hbtn" title="Undo" onClick={undo} disabled={!canUndo}><span className="ico">↶</span><span className="txt">undo</span></button>
             <button className="hbtn" title="Redo" onClick={redo} disabled={!canRedo}><span className="ico">↷</span><span className="txt">redo</span></button>
@@ -290,7 +290,7 @@
       return <div className="ob-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
         <div className="ob-card">
           <div className="ob-logo">🗂</div>
-          <h2 className="ob-title">Bienvenido a DiagramaOS</h2>
+          <h2 className="ob-title">Bienvenido a Mi Flow</h2>
           <p className="ob-sub">Tu herramienta de diagramas y flujos, directo en el browser.</p>
           <div className="ob-section">
             <h4>💾 Cómo guardar y cargar tus flujos</h4>
